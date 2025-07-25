@@ -1,0 +1,386 @@
+# Shielded CSV Vault - User Scenarios
+
+## 📋 Overview
+
+The Shielded CSV Vault system is a DeFi protocol that allows users to **privately and securely** deposit and withdraw assets. This document contains detailed scenarios on how to use the system.
+
+---
+
+## 🎯 Core Usage Scenarios
+
+### Scenario 1: Simple Asset Deposit and Withdrawal
+
+#### **Situation**: Alice wants to deposit 100 USDC into the vault and withdraw it later.
+
+#### **Step 1: Wallet Connection**
+
+```
+1. Alice opens the web application (http://localhost:3000)
+2. Clicks "Connect Wallet to Access Vaults" button
+3. Selects and connects her MetaMask wallet
+4. Switches to Arbitrum Sepolia network
+```
+
+#### **Step 2: Access USDC Vault**
+
+```
+1. After connection, "Your Private Vaults" page appears
+2. On the "USDC Vault" card, she sees:
+   - Your Balance: 1000.0000 USDC (amount in wallet)
+   - Total Deposited: 0.00 USDC (no deposits yet)
+   - Vault Balance: 0.00 USDC (vault is empty)
+```
+
+#### **Step 3: USDC Deposit**
+
+```
+1. Enters "100" in the "Deposit Amount" field
+2. Clicks "Deposit" button
+3. Confirms the transaction in MetaMask
+4. Transaction completes and page updates
+```
+
+#### **Step 4: Post-Deposit Status**
+
+```
+1. Sees updated information on the vault card:
+   - Your Balance: 900.0000 USDC (100 USDC decreased)
+   - Total Deposited: 100.00 USDC (deposited amount)
+   - Vault Balance: 100.00 USDC (amount in vault)
+   - Daily limit remaining: 900.00 USDC (daily withdrawal limit)
+```
+
+#### **Step 5: USDC Withdrawal**
+
+```
+1. Enters "50" in the "Withdraw Amount" field
+2. Clicks "Withdraw" button
+3. Confirms the transaction in MetaMask
+4. Transaction completes and page updates
+```
+
+#### **Step 6: Post-Withdrawal Status**
+
+```
+1. Sees updated information on the vault card:
+   - Your Balance: 950.0000 USDC (50 USDC returned)
+   - Total Deposited: 100.00 USDC (unchanged)
+   - Vault Balance: 50.00 USDC (50 USDC remaining)
+   - Daily limit remaining: 850.00 USDC (50 USDC decreased)
+```
+
+---
+
+### Scenario 2: ETH Vault Usage
+
+#### **Situation**: Bob wants to deposit 0.5 ETH into the vault.
+
+#### **Step 1: Access ETH Vault**
+
+```
+1. Bob connects his wallet
+2. On the "ETH Vault" card, he sees:
+   - Your Balance: 2.5000 ETH
+   - Total Deposited: 0.00 ETH
+   - Vault Balance: 0.00 ETH
+```
+
+#### **Step 2: ETH Deposit**
+
+```
+1. Enters "0.5" in the "Deposit Amount" field
+2. Clicks "Deposit" button
+3. Confirms the transaction in MetaMask (including gas fees)
+4. Transaction completes
+```
+
+#### **Step 3: Post-Deposit Status**
+
+```
+1. Sees updated information on the vault card:
+   - Your Balance: 2.0000 ETH (0.5 ETH decreased)
+   - Total Deposited: 0.50 ETH
+   - Vault Balance: 0.50 ETH
+   - Daily limit remaining: 0.50 ETH (daily limit)
+```
+
+---
+
+### Scenario 3: Daily Limit Exceeded
+
+#### **Situation**: Charlie tries to exceed the daily withdrawal limit.
+
+#### **Initial Status**
+
+```
+- Charlie's vault: 1000 USDC
+- Daily withdrawal limit: 100 USDC
+- Withdrawn today: 80 USDC
+- Remaining limit: 20 USDC
+```
+
+#### **Attempt: Limit Exceeded**
+
+```
+1. Charlie enters "50" in the "Withdraw Amount" field
+2. Clicks "Withdraw" button
+3. System shows error: "Daily limit exceeded"
+4. Transaction is cancelled
+```
+
+#### **Solution**
+
+```
+1. Charlie enters "20" in the "Withdraw Amount" field (remaining limit)
+2. Clicks "Withdraw" button
+3. Transaction succeeds
+4. Daily limit is reset
+```
+
+---
+
+### Scenario 4: Minimum/Maximum Deposit Limits
+
+#### **Situation**: David tries to deposit very small or very large amounts.
+
+#### **Minimum Limit Exceeded**
+
+```
+1. David enters "0.1" in the "Deposit Amount" field (minimum 1 USDC)
+2. Clicks "Deposit" button
+3. System shows error: "Amount below minimum"
+4. Transaction is cancelled
+```
+
+#### **Maximum Limit Exceeded**
+
+```
+1. David enters "15000" in the "Deposit Amount" field (maximum 10000 USDC)
+2. Clicks "Deposit" button
+3. System shows error: "Amount above maximum"
+4. Transaction is cancelled
+```
+
+---
+
+### Scenario 5: Wallet Disconnection
+
+#### **Situation**: Eve disconnects her wallet during a transaction.
+
+#### **Initial State**
+
+```
+1. Eve connects her wallet
+2. Deposits 100 USDC
+3. Transaction completes
+```
+
+#### **Disconnection**
+
+```
+1. Eve closes MetaMask or changes network
+2. Page automatically updates
+3. "Connect Wallet to Access Vaults" message appears
+4. Vault cards are hidden
+```
+
+#### **Reconnection**
+
+```
+1. Eve reconnects her wallet
+2. Vault cards reappear
+3. Previous deposits are still available
+4. Can continue with transactions
+```
+
+---
+
+### Scenario 6: Error Conditions and Solutions
+
+#### **Insufficient Balance**
+
+```
+1. User tries to deposit 1000 USDC
+2. Only has 500 USDC in wallet
+3. MetaMask shows error: "Insufficient balance"
+4. Solution: Deposit smaller amount or add balance
+```
+
+#### **Insufficient Gas Fees**
+
+```
+1. User tries to deposit ETH
+2. Not enough ETH for gas fees
+3. MetaMask shows error: "Insufficient funds for gas"
+4. Solution: Get ETH from Arbitrum Sepolia faucet
+```
+
+#### **Network Error**
+
+```
+1. User is on wrong network (Ethereum Mainnet)
+2. Transaction fails
+3. Solution: Switch to Arbitrum Sepolia network
+```
+
+---
+
+## 🔧 Technical Details
+
+### **Nullifier System - How It Works?**
+
+#### **What is a Nullifier?**
+
+```
+A nullifier is a unique identifier that is the heart of the Shielded CSV system.
+It is automatically created for each deposit transaction and ensures
+the security of the system.
+```
+
+#### **How is a Nullifier Created?**
+
+```
+1. When a user wants to make a deposit, the system:
+   - Takes the user's wallet address
+   - Adds the current timestamp
+   - Generates a random value
+   - Combines these three values
+   - Creates a unique 32-byte nullifier using Keccak256 hash function
+
+Example: 0x1234567890abcdef... (64-character hex string)
+```
+
+#### **Purpose of Nullifier**
+
+```
+✅ Double-Spend Protection: Prevents the same asset from being withdrawn twice
+✅ Transaction Tracking: Secretly tracks which deposit matches which withdrawal
+✅ Security: Maintains system integrity
+```
+
+#### **Nullifier Lifecycle**
+
+```
+1. DEPOSIT: User deposits 100 USDC
+   → System creates nullifier: 0xABC123...
+   → Nullifier is recorded in smart contract
+   → Nullifier is secretly stored for user
+
+2. WITHDRAWAL: User wants to withdraw 50 USDC
+   → System checks the nullifier
+   → If nullifier is valid, withdrawal proceeds
+   → Nullifier is marked as "spent"
+   → Cannot be used again
+
+3. RESULT: User can withdraw remaining 50 USDC
+   → New nullifier is created
+   → Process repeats
+```
+
+#### **Nullifier from User Perspective**
+
+```
+👤 User doesn't see or manage nullifiers
+👤 System automatically creates and manages them
+👤 User only clicks "Deposit" and "Withdraw" buttons
+👤 Nullifier system works in the background
+```
+
+### **Proof System**
+
+```
+- Proof is required for withdrawal transactions
+- Proof verifies that user actually made a deposit
+- Currently using a simple proof system
+- Future: zk-SNARK proof system will be integrated
+```
+
+### **Security Features**
+
+```
+- Reentrancy protection
+- Emergency pause system
+- Daily withdrawal limits
+- Minimum/maximum deposit limits
+- Vault authorization system
+```
+
+---
+
+## 📊 Example Transaction Flow
+
+### **Successful Deposit Transaction**
+
+```
+1. User wants to deposit 100 USDC
+2. System creates nullifier: 0x1234...
+3. User confirms in MetaMask
+4. Smart contract:
+   - Takes USDC from user
+   - Deposits into vault
+   - Records nullifier
+   - Emits event
+5. Transaction completes
+6. UI updates
+```
+
+### **Successful Withdrawal Transaction**
+
+```
+1. User wants to withdraw 50 USDC
+2. System creates proof: 0x5678...
+3. User confirms in MetaMask
+4. Smart contract:
+   - Verifies proof
+   - Checks nullifier
+   - Checks daily limit
+   - Sends USDC to user
+   - Marks nullifier as spent
+5. Transaction completes
+6. UI updates
+```
+
+---
+
+## 🎯 Future Features
+
+### **Advanced Privacy**
+
+```
+- zk-SNARK proof system
+- Merkle tree-based nullifier system
+- Advanced encryption protocols
+```
+
+### **Additional Functions**
+
+```
+- Withdraw to different address
+- Batch transactions
+- Vault sharing
+- Note adding
+- Time-locked withdrawals
+```
+
+### **UI Improvements**
+
+```
+- Transaction history
+- Charts and statistics
+- Mobile application
+- Dark mode
+- Multi-language support
+```
+
+---
+
+## 📝 Summary
+
+The Shielded CSV Vault system enables users to:
+
+1. **Securely** deposit assets
+2. **Privately** withdraw assets
+3. **Quickly** and **cheaply** perform transactions
+4. Work with **EVM-compatible** wallets
+
+The system provides a simple but powerful DeFi infrastructure and can be enhanced with more advanced privacy features in the future.
