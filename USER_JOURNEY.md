@@ -227,13 +227,63 @@ Shielded CSV Vault sistemi, kullanıcıların **gizli ve güvenli** bir şekilde
 
 ## 🔧 Teknik Detaylar
 
-### **Nullifier Sistemi**
+### **Nullifier Sistemi - Nasıl Çalışır?**
+
+#### **Nullifier Nedir?**
 
 ```
-- Her yatırım için benzersiz bir nullifier oluşturulur
-- Nullifier, kullanıcının adresi + timestamp + random değer ile oluşturulur
-- Çekim işleminde nullifier harcanır ve tekrar kullanılamaz
-- Bu sistem double-spend saldırılarını engeller
+Nullifier, Shielded CSV sisteminin kalbi olan benzersiz bir kimliktir.
+Her yatırım işlemi için otomatik olarak oluşturulur ve sistemin
+güvenliğini sağlar.
+```
+
+#### **Nullifier Nasıl Oluşturulur?**
+
+```
+1. Kullanıcı yatırım yapmak istediğinde sistem:
+   - Kullanıcının cüzdan adresini alır
+   - Şu anki zaman damgasını (timestamp) ekler
+   - Rastgele bir değer üretir
+   - Bu üç değeri birleştirir
+   - Keccak256 hash fonksiyonu ile 32-byte'lık benzersiz bir nullifier oluşturur
+
+Örnek: 0x1234567890abcdef... (64 karakterlik hex string)
+```
+
+#### **Nullifier'ın Amacı**
+
+```
+✅ Çifte Harcama Koruması: Aynı varlığın iki kez çekilmesini engeller
+✅ İşlem Takibi: Hangi yatırımın hangi çekimle eşleştiğini gizli şekilde takip eder
+✅ Güvenlik: Sistemin bütünlüğünü korur
+```
+
+#### **Nullifier Yaşam Döngüsü**
+
+```
+1. YATIRIM: Kullanıcı 100 USDC yatırır
+   → Sistem nullifier oluşturur: 0xABC123...
+   → Nullifier akıllı sözleşmede kaydedilir
+   → Kullanıcıya gizli şekilde saklanır
+
+2. ÇEKİM: Kullanıcı 50 USDC çekmek ister
+   → Sistem nullifier'ı kontrol eder
+   → Nullifier geçerliyse çekim yapılır
+   → Nullifier "harcanmış" olarak işaretlenir
+   → Artık tekrar kullanılamaz
+
+3. SONUÇ: Kullanıcı kalan 50 USDC'yi çekebilir
+   → Yeni bir nullifier oluşturulur
+   → Süreç tekrarlanır
+```
+
+#### **Kullanıcı Açısından Nullifier**
+
+```
+👤 Kullanıcı nullifier'ı görmez veya yönetmez
+👤 Sistem otomatik olarak oluşturur ve yönetir
+👤 Kullanıcı sadece "Deposit" ve "Withdraw" butonlarına basar
+👤 Arka planda nullifier sistemi çalışır
 ```
 
 ### **Proof Sistemi**
