@@ -72,14 +72,71 @@ We implement an 8-layer security system that goes beyond traditional nullifier t
 
 ```
 Layer 1: Basic Tracking     → Spent nullifier registry
-Layer 2: Temporal Protection → Timestamp-based expiration
+Layer 2: Temporal Protection → Timestamp-based expiration (30 days)
 Layer 3: Context Validation  → Transaction context verification
 Layer 4: Cross-Chain Protection → Multi-chain nullifier tracking
-Layer 5: Guardian System     → Emergency operations and oversight
-Layer 6: Adaptive Rate Limiting → Dynamic rate limiting
-Layer 7: Quantum Resistance → Multi-round quantum-resistant hashing
+Layer 5: Multi-Signature Approval → Threshold-based approval system (3 approvals required)
+Layer 6: Adaptive Rate Limiting → Dynamic rate limiting (1-10x multiplier)
+Layer 7: Quantum Resistance → Multi-round quantum-resistant hashing (3 rounds)
 Layer 8: Emergency Recovery → Guardian-based emergency operations
 ```
+
+**Key Security Features:**
+
+**Nullifier Lifetime:**
+
+- **Expiration Time**: 30 days from creation
+- **Automatic Invalidation**: Expired nullifiers cannot be spent
+- **Timestamp Tracking**: Creation time stored for each nullifier
+
+**Multi-Signature Approval System:**
+
+- **Required Approvals**: 3 approvals needed before spending
+- **Approval Tracking**: Per-nullifier approval count
+- **Approval Validation**: Checked during spending verification
+- **Approval Events**: All approvals logged on-chain
+
+**Adaptive Rate Limiting:**
+
+- **Base Rate**: 1 hour between operations
+- **Multiplier Range**: 1x to 10x based on user behavior
+- **Success/Failure Logic**:
+  - Success: Multiplier decreases (max 1x)
+  - Failure: Multiplier increases (max 10x)
+- **Time Decay**: Multiplier gradually returns to 1x
+
+**Quantum-Resistant Hashing:**
+
+- **Multi-Round Process**: 3 rounds of hashing
+- **Entropy Sources**: Block randomness, block number, round index
+- **Final Hash**: Quantum-resistant nullifier output
+
+**Guardian System:**
+
+- **Emergency Powers**: Mark nullifiers as spent in emergencies
+- **Owner Control**: Only owner can add/remove guardians
+- **Emergency Events**: All emergency operations logged
+- **Guardian Count**: Tracked for transparency
+
+**Advanced Secret Generation:**
+
+- **EIP-712 Based**: Deterministic secrets from signatures
+- **Multiple Methods**: Signature-based, deterministic, ZK PRNG
+- **Secret Tracking**: Prevent reuse of secrets
+- **Context Binding**: Secrets bound to specific contexts
+
+**Cross-Chain Protection:**
+
+- **Chain ID Tracking**: Nullifiers tracked per chain
+- **Cross-Chain Spent Check**: Prevent double-spending across chains
+- **Chain Validation**: Invalid chain IDs rejected
+
+**Batch Operations:**
+
+- **Batch Size Limit**: Maximum 50 nullifiers per batch
+- **Batch Verification**: All nullifiers verified before processing
+- **Partial Success**: Failed nullifiers don't affect successful ones
+- **Batch Events**: Special events for batch operations
 
 #### 3. Deterministic Secret Generation
 
