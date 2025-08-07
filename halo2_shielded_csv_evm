@@ -482,6 +482,31 @@ The VerifierOracle implements a sophisticated multi-oracle consensus system:
 - **Rotation System**: Underperforming oracles are rotated out
 - **Emergency Controls**: System can be paused in emergencies
 
+### Deposit and Withdrawal Limits
+
+The system implements sophisticated limits for security and compliance:
+
+**ERC20 Vault Limits:**
+
+- **Minimum Deposit**: 1 USDC (1e6 wei for 6-decimal tokens)
+- **Maximum Deposit**: 1,000,000 tokens (1e24 wei)
+- **Daily Withdrawal Limit**: 100,000 tokens (1e23 wei) per user
+- **Block-based Daily Calculation**: 5,760 blocks per day (~15 second blocks)
+
+**Native ETH Vault Limits:**
+
+- **Minimum Deposit**: 0.001 ETH
+- **Maximum Deposit**: 100 ETH
+- **Daily Withdrawal Limit**: 10 ETH per user
+- **Same Block-based Daily Calculation**: 5,760 blocks per day
+
+**Limit Enforcement:**
+
+- **Deposit Limits**: Checked before token transfer
+- **Withdrawal Limits**: Reset daily based on block numbers
+- **Daily Tracking**: Per-user daily withdrawal amounts
+- **Admin Control**: Owner can update all limits
+
 ### Adaptive Rate Limiting
 
 We implement an intelligent rate limiting system that adapts to user behavior:
