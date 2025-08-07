@@ -460,40 +460,180 @@ Frontend → localStorage → Private State ↔ Blockchain → Public State
 
 Our Halo2 circuit is designed for efficiency and security:
 
+**Circuit Structure:**
+
+**Private Inputs (Advice Columns):**
+
+- **Core Inputs**: secret, nonce, amount
+- **User Context**: user_address, context, action_id, chain_id
+- **Entropy Sources**: entropy, timestamp, randomness
+- **Merkle Context**: leaf_index, merkle_root, local_salt
+- **PRNG Context**: seed, index
+
+**Public Inputs (Instance Columns):**
+
+- **nullifier**: The quantum-resistant nullifier
+- **commitment**: The Poseidon commitment hash
+- **amount_public**: The transaction amount (public for verification)
+
+**Custom Gates:**
+
+- **nullifier_verification**: Verifies nullifier = Poseidon(secret, nonce)
+- **commitment_verification**: Verifies commitment = Poseidon(secret, nonce, amount)
+- **deterministic_secret_generation**: Generates secrets from user context
+- **time_based_nonce_generation**: Generates nonces from time and entropy
+- **quantum_resistant_nullifier**: Multi-round quantum-resistant hashing
+- **amount_consistency**: Ensures private and public amounts match
+
 **Circuit Constraints:**
 
-- Nullifier Verification: 15 constraints
-- Commitment Generation: 20 constraints
-- Secret Derivation: 25 constraints
-- Nonce Generation: 10 constraints
-- **Total: 70 constraints** (optimized for gas efficiency)
+- **Nullifier Verification**: 1 constraint (simplified Poseidon)
+- **Commitment Verification**: 1 constraint (simplified Poseidon)
+- **Secret Generation**: 1 constraint (deterministic generation)
+- **Nonce Generation**: 1 constraint (time-based generation)
+- **Quantum Resistance**: 1 constraint (multi-round hashing)
+- **Amount Consistency**: 1 constraint (private/public match)
+- **Total: 6 constraints** (optimized for gas efficiency)
 
 **Field Arithmetic:**
 
-- Field: BN254 scalar field (254 bits)
-- Curve: BN254 elliptic curve
-- Security Level: 128 bits
+- **Field**: BN254 scalar field (254 bits)
+- **Curve**: BN254 elliptic curve
+- **Security Level**: 128 bits
+- **Field Operations**: Addition, multiplication, equality constraints
 
-### Poseidon Hash Function
+**Poseidon Hash Implementation:**
 
-We use a custom Poseidon hash optimized for zero-knowledge proofs:
+**Multi-Input Support:**
 
-**Design Principles:**
+- **2 Inputs**: `poseidon_hash([a, b])` → `a + b + (a * b) + (result * result)`
+- **3 Inputs**: `poseidon_hash([a, b, c])` → `a + b + c + (a * b) + (b * c) + (result * result)`
+- **4 Inputs**: `poseidon_hash([a, b, c, d])` → `a + b + c + d + (a * b) + (c * d) + (result * result)`
+- **Variable Length**: Sum of inputs + non-linearity
 
-- **ZK-Friendly**: Minimal constraint count
-- **Security**: 128-bit security against classical attacks
-- **Quantum Resistance**: Resistant to quantum computing
-- **Efficiency**: 3 rounds for optimal performance
-
-**Algorithm:**
+**Quantum-Resistant Nullifier Generation:**
 
 ```
-For inputs [a, b, c]:
-1. result = a + b + c
-2. result += (a * b) + (b * c)  // Non-linearity
-3. result += result * result    // Diffusion
-4. return result
+Round 1: hash1 = Poseidon(secret, nonce)
+Round 2: hash2 = Poseidon(hash1, context)
+Round 3: hash3 = Poseidon(hash2, chain_id)
+Round 4: quantum_hash = Poseidon(hash3, block_randomness, block_number)
+Round 5-7: quantum_hash = Poseidon(quantum_hash, round_index) // 3 additional rounds
 ```
+
+**Secret Generation Methods:**
+
+**1. EIP-712 Based:**
+
+```
+secret = Poseidon("ZKAppContext", signer_address, purpose, index, timestamp, chain_id)
+```
+
+**2. Deterministic:**
+
+```
+secret = Poseidon("ZKAppContext", user_address, context, action_id, chain_id)
+```
+
+**3. ZK PRNG:**
+
+```
+secret = MultiRoundPoseidon(seed, index) // 3 rounds for randomness
+```
+
+**Nonce Generation Methods:**
+
+**1. Time-Based:**
+
+```
+nonce = Poseidon(timestamp, block_randomness, user_address, entropy, chain_id)
+```
+
+**2. Merkle-Based:**
+
+```
+nonce = Poseidon(leaf_index, merkle_root, local_salt)
+```
+
+**3. Sequential:**
+
+```
+nonce = Poseidon(user_address, index, chain_id)
+```
+
+**Circuit Verification Functions:**
+
+**Nullifier-Commitment Verification:**
+
+```rust
+pub fn verify_nullifier_commitment(
+    nullifier: Fp,
+    commitment: Fp,
+    secret: Fp,
+    nonce: Fp,
+    amount: Fp,
+) -> bool
+```
+
+**Quantum-Resistant Verification:**
+
+```rust
+pub fn verify_quantum_resistant_nullifier(
+    nullifier: Fp,
+    secret: Fp,
+    nonce: Fp,
+    context: Fp,
+    chain_id: Fp,
+    randomness: Fp,
+    index: Fp,
+) -> bool
+```
+
+**Deterministic Secret Verification:**
+
+```rust
+pub fn verify_nullifier_with_deterministic_secret(
+    nullifier: Fp,
+    user_address: Fp,
+    context: &str,
+    action_id: Fp,
+    chain_id: Fp,
+    nonce: Fp,
+    randomness: Fp,
+    index: Fp,
+) -> bool
+```
+
+**WASM Integration:**
+
+**Dependencies:**
+
+- **halo2_proofs**: 0.3 (core ZK proof system)
+- **halo2curves**: 0.9 (BN254 curve implementation)
+- **halo2_poseidon**: 0.1 (Poseidon hash implementation)
+- **wasm-bindgen**: 0.2 (WebAssembly bindings)
+- **getrandom**: 0.2 (cryptographic randomness)
+
+**Build Configuration:**
+
+- **Crate Type**: cdylib (WASM) + rlib (Rust library)
+- **Optimization**: Level 3 with LTO enabled
+- **Code Generation**: Single unit for maximum optimization
+
+**Field Conversion Utilities:**
+
+**String to Field:**
+
+- **Hex Support**: 0x-prefixed hex strings
+- **Decimal Support**: Standard decimal numbers
+- **Byte Arrays**: Raw byte arrays with padding
+- **Error Handling**: Graceful fallback for invalid inputs
+
+**Field to String:**
+
+- **Consistent Format**: 0x-prefixed hex output
+- **Byte Representation**: Full 32-byte representation
+- **Zero Padding**: Consistent padding for all values
 
 ### Guardian System Architecture
 
