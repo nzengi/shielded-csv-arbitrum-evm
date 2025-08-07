@@ -116,6 +116,287 @@ Nullifier = QuantumRounds(
 
 This provides 256-bit post-quantum security while maintaining ZK-friendly properties.
 
+## How It Works: Step-by-Step Scenarios
+
+### Scenario 1: Alice's Private Deposit
+
+Let's follow Alice as she makes a private deposit of 100 USDC.
+
+#### Frontend: User Experience
+
+1. **Alice opens the DApp** and connects her MetaMask wallet
+2. **She selects "Deposit"** and enters 100 USDC
+3. **The DApp requests EIP-712 signature** for secret generation
+4. **Alice signs the message** in her wallet
+5. **The DApp shows "Processing..."** while generating the ZK proof
+
+#### Backend: What Happens Behind the Scenes
+
+**Step 1: Secret Generation**
+
+```
+Frontend → Halo2 Circuit: "Generate secret from EIP-712 signature"
+Halo2 Circuit → Poseidon Hash:
+    Input: ["ZKAppContext", alice_address, "deposit", 1, timestamp, 421614]
+    Output: secret_hash (32 bytes)
+```
+
+**Step 2: Nonce Generation**
+
+```
+Halo2 Circuit → Time-based Nonce:
+    Input: [timestamp, block_randomness, alice_address, entropy, 421614]
+    Output: nonce_hash (32 bytes)
+```
+
+**Step 3: Nullifier Creation**
+
+```
+Halo2 Circuit → Quantum-Resistant Hash:
+    Round 1: Poseidon(secret_hash, nonce_hash)
+    Round 2: Poseidon(result, context_hash, 421614)
+    Round 3: Poseidon(result, block_randomness, block_number)
+    Output: nullifier (32 bytes)
+```
+
+**Step 4: Commitment Generation**
+
+```
+Halo2 Circuit → Poseidon Hash:
+    Input: [secret_hash, nonce_hash, 100000000] // 100 USDC in wei
+    Output: commitment (32 bytes)
+```
+
+**Step 5: ZK Proof Generation**
+
+```
+Halo2 Circuit → Plonk Proof:
+    Private Inputs: [secret_hash, nonce_hash, 100000000, alice_address, ...]
+    Public Inputs: [nullifier, commitment, 100000000]
+    Output: zk_proof (compressed SNARK)
+```
+
+**Step 6: Smart Contract Interaction**
+
+```
+Frontend → CSV_ERC20Vault.deposit():
+    Parameters: [100000000, nullifier]
+    Gas: ~150,000
+    Result: Deposit event emitted
+```
+
+#### What Alice Sees
+
+- ✅ **Transaction confirmed** on Arbitrum
+- ✅ **100 USDC deducted** from her wallet
+- ✅ **No traceable link** between her address and the deposit
+- ✅ **Private balance** stored in localStorage
+
+#### What the Blockchain Sees
+
+- 📝 **Deposit event** with nullifier and amount
+- 🔒 **No sender address** in the event
+- 🔒 **No link** to Alice's wallet
+- 🔒 **No transaction history** connection
+
+### Scenario 2: Bob's Private Withdrawal
+
+Now let's follow Bob as he withdraws 50 USDC from his private balance.
+
+#### Frontend: User Experience
+
+1. **Bob opens the DApp** and connects his wallet
+2. **He selects "Withdraw"** and enters 50 USDC
+3. **The DApp loads his private deposits** from localStorage
+4. **He selects a deposit** to withdraw from
+5. **The DApp generates withdrawal proof** using his secret
+6. **Bob confirms the transaction** in his wallet
+
+#### Backend: What Happens Behind the Scenes
+
+**Step 1: Secret Recovery**
+
+```
+Frontend → localStorage: "Get secret for deposit #3"
+localStorage → Frontend: secret_key (encrypted)
+Frontend → Wallet: "Decrypt secret_key"
+Wallet → Frontend: decrypted_secret
+```
+
+**Step 2: Proof Generation**
+
+```
+Frontend → Halo2 Circuit: "Generate withdrawal proof"
+Halo2 Circuit → Verify Inputs:
+    - secret: matches deposit secret
+    - nonce: matches deposit nonce
+    - amount: 50 USDC (less than deposit)
+    - nullifier: not yet spent
+    - commitment: matches deposit commitment
+
+Halo2 Circuit → ZK Proof:
+    Private: [secret, nonce, 50000000, bob_address, ...]
+    Public: [nullifier, commitment, 50000000]
+    Output: withdrawal_proof
+```
+
+**Step 3: Oracle Verification**
+
+```
+Frontend → VerifierOracle.verifyWithdrawalProof():
+    Parameters: [bob_address, 50000000, withdrawal_proof]
+    Oracle → Halo2 Circuit: "Verify proof"
+    Halo2 Circuit → Oracle: "Proof valid"
+    Oracle → Smart Contract: "Withdrawal approved"
+```
+
+**Step 4: Smart Contract Execution**
+
+```
+CSV_ERC20Vault.withdraw():
+    1. Check daily limit (50 USDC < 100K daily limit) ✅
+    2. Verify oracle approval ✅
+    3. Check vault balance (sufficient) ✅
+    4. Mark nullifier as spent ✅
+    5. Transfer 50 USDC to Bob ✅
+    6. Emit Withdrawal event ✅
+```
+
+#### What Bob Sees
+
+- ✅ **50 USDC received** in his wallet
+- ✅ **Transaction confirmed** on Arbitrum
+- ✅ **No link** to his original deposit
+- ✅ **Private balance updated** in localStorage
+
+#### What the Blockchain Sees
+
+- 📝 **Withdrawal event** with amount and proof
+- 🔒 **No connection** to original deposit
+- 🔒 **No sender history** revealed
+- 🔒 **Nullifier marked as spent** (prevents double-spending)
+
+### Scenario 3: Cross-Chain Privacy Bridge
+
+Let's see how Carol transfers private funds from Ethereum to Arbitrum.
+
+#### Frontend: User Experience
+
+1. **Carol has private ETH** on Ethereum mainnet
+2. **She wants to bridge** to Arbitrum for DeFi
+3. **She selects "Cross-Chain Bridge"**
+4. **The DApp shows available networks**
+5. **She selects Ethereum → Arbitrum**
+6. **The DApp generates cross-chain proof**
+
+#### Backend: Cross-Chain Mechanics
+
+**Step 1: Source Chain Withdrawal**
+
+```
+Frontend → Ethereum CSV_NativeVault.withdraw():
+    Parameters: [amount, cross_chain_proof]
+    Result: ETH withdrawn, nullifier spent on Ethereum
+```
+
+**Step 2: Cross-Chain Nullifier Tracking**
+
+```
+Ethereum → Cross-Chain Oracle: "Nullifier spent"
+Cross-Chain Oracle → Arbitrum: "Mark nullifier as spent"
+Arbitrum → UltraSecureNullifier: "crossChainNullifiers[1][nullifier] = true"
+```
+
+**Step 3: Destination Chain Deposit**
+
+```
+Frontend → Arbitrum CSV_NativeVault.deposit():
+    Parameters: [amount, new_nullifier]
+    Result: ETH deposited on Arbitrum with new privacy
+```
+
+#### What Carol Sees
+
+- ✅ **ETH transferred** from Ethereum to Arbitrum
+- ✅ **Privacy maintained** across chains
+- ✅ **No traceable link** between source and destination
+- ✅ **Full DeFi access** on Arbitrum
+
+## Frontend-Backend Integration Architecture
+
+### Data Flow Diagram
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Frontend  │    │  Halo2 WASM │    │   Oracle    │    │   Blockchain│
+│   (React)   │    │   (Rust)    │    │  (Node.js)  │    │  (Arbitrum) │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+       │                   │                   │                   │
+       │ 1. User Input     │                   │                   │
+       ├──────────────────►│                   │                   │
+       │                   │ 2. Generate Secret│                   │
+       │                   ├──────────────────►│                   │
+       │                   │ 3. Create Nonce   │                   │
+       │                   ├──────────────────►│                   │
+       │                   │ 4. Generate Proof │                   │
+       │                   ├──────────────────►│                   │
+       │                   │                   │ 5. Verify Proof   │
+       │                   │                   ├──────────────────►│
+       │                   │                   │ 6. Approve        │
+       │                   │                   ├──────────────────►│
+       │ 7. Success        │                   │                   │
+       │◄──────────────────┤                   │                   │
+```
+
+### Key Integration Points
+
+#### 1. Wallet Connection Layer
+
+```
+Frontend → Wagmi → MetaMask → User Approval → Contract Interaction
+```
+
+#### 2. Secret Management Layer
+
+```
+Frontend → EIP-712 Signature → Halo2 Circuit → Deterministic Secret
+```
+
+#### 3. Proof Generation Layer
+
+```
+Frontend → Halo2 WASM → Circuit Synthesis → ZK Proof → Smart Contract
+```
+
+#### 4. State Synchronization Layer
+
+```
+Frontend → localStorage → Private State ↔ Blockchain → Public State
+```
+
+### Privacy Guarantees
+
+#### What Users See
+
+- **Private Balances**: Stored locally, encrypted
+- **Transaction History**: Only their own transactions
+- **No Linkage**: Each transaction appears independent
+- **Cross-Chain Privacy**: Seamless privacy across networks
+
+#### What Adversaries See
+
+- **Public Events**: Only nullifiers and amounts
+- **No Sender Info**: Addresses are hidden
+- **No Transaction Graph**: Cannot trace funds
+- **No Cross-Chain Links**: Privacy maintained across chains
+
+#### What Regulators Can Access
+
+- **Selective Disclosure**: Audit trails when needed
+- **Compliance Proofs**: Regulatory requirements met
+- **Guardian Oversight**: Emergency access available
+- **Transparent Governance**: Protocol parameters public
+
 ## Technical Deep Dive
 
 ### Halo2 Circuit Design
