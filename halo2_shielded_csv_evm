@@ -75,7 +75,7 @@ Layer 1: Basic Tracking     → Spent nullifier registry
 Layer 2: Temporal Protection → Timestamp-based expiration
 Layer 3: Context Validation  → Transaction context verification
 Layer 4: Cross-Chain Protection → Multi-chain nullifier tracking
-Layer 5: Multi-Signature Approval → Guardian-based approval system
+Layer 5: Guardian System     → Emergency operations and oversight
 Layer 6: Adaptive Rate Limiting → Dynamic rate limiting
 Layer 7: Quantum Resistance → Multi-round quantum-resistant hashing
 Layer 8: Emergency Recovery → Guardian-based emergency operations
@@ -329,7 +329,7 @@ Frontend → Arbitrum CSV_NativeVault.deposit():
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │   Frontend  │    │  Halo2 WASM │    │   Oracle    │    │   Blockchain│
-│   (React)   │    │   (Rust)    │    │  (Node.js)  │    │  (Arbitrum) │
+│   (React)   │    │   (Rust)    │    │  (Solidity) │    │  (Arbitrum) │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
        │                   │                   │                   │
        │ 1. User Input     │                   │                   │
@@ -437,6 +437,50 @@ For inputs [a, b, c]:
 3. result += result * result    // Diffusion
 4. return result
 ```
+
+### Guardian System Architecture
+
+The guardian system provides emergency recovery capabilities:
+
+**Guardian Selection:**
+
+1. **Owner Appointment**: Initial guardian selection by owner
+2. **Multi-Signature Requirements**: Threshold-based operations
+3. **Rotation Mechanism**: Periodic guardian rotation
+4. **Emergency Powers**: Limited emergency operation capabilities
+
+**Emergency Operations:**
+
+1. **Nullifier Marking**: Emergency nullifier invalidation
+2. **Contract Pausing**: Emergency pause functionality
+3. **Recovery Procedures**: Asset recovery mechanisms
+4. **Audit Trails**: Complete operation logging
+
+### Oracle System Architecture
+
+The VerifierOracle implements a sophisticated multi-oracle consensus system:
+
+**Oracle Requirements:**
+
+- **Minimum Oracles**: 1 (for testing), 3+ (production)
+- **Minimum Stake**: 0.001 ETH per oracle (testing), 10 ETH (production)
+- **Consensus Threshold**: 1 vote (testing), 2/3 majority (production)
+- **Staking Mechanism**: Oracles must stake ETH to participate
+
+**Consensus Process:**
+
+1. **Proof Submission**: User submits proof for verification
+2. **Oracle Voting**: Active oracles vote on proof validity
+3. **Consensus Check**: System checks if threshold is met
+4. **Result Recording**: Final result is recorded on-chain
+5. **Challenge Period**: Results can be challenged within time window
+
+**Security Features:**
+
+- **Slashing Mechanism**: Malicious oracles lose their stake
+- **Performance Tracking**: Oracle performance is monitored
+- **Rotation System**: Underperforming oracles are rotated out
+- **Emergency Controls**: System can be paused in emergencies
 
 ### Adaptive Rate Limiting
 
